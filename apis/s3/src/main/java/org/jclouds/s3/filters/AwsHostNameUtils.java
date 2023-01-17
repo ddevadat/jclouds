@@ -32,6 +32,8 @@ public class AwsHostNameUtils {
 
    private static final Pattern EXTENDED_CLOUDSEARCH_ENDPOINT_PATTERN = Pattern.compile("^(?:.+\\.)?([a-z0-9-]+)\\.cloudsearch\\..+");
 
+   private static final Pattern OCI_ENDPOINT_PATTERN = Pattern.compile("^(?:.+\\.)?objectstorge[.-]([a-z0-9-]+)$");
+
    private static final ImmutableMap<String, String> HOST_REGEX_TO_REGION_MAPPINGS = new ImmutableMap.Builder<String, String>()
       .put("(.+\\.)?s3\\.amazonaws\\.com", "us-east-1")
       .put("(.+\\.)?s3-external-1\\.amazonaws\\.com", "us-east-1")
@@ -59,7 +61,10 @@ public class AwsHostNameUtils {
          int index = host.length() - ".amazonaws.com".length();
          return parseStandardRegionName(host.substring(0, index));
       }
-
+      if (host.endsWith(".oraclecloud.com")) {
+         int index = host.length() - ".oraclecloud.com".length();
+         return parseStandardRegionName(host.substring(0, index));
+      }
       if (serviceHint != null) {
          if (serviceHint.equals("cloudsearch")
             && !host.startsWith("cloudsearch.")) {
@@ -110,7 +115,11 @@ public class AwsHostNameUtils {
          // host was 'bucket.s3-[region].amazonaws.com'.
          return matcher.group(1);
       }
-
+      Matcher ocimatcher = OCI_ENDPOINT_PATTERN.matcher(fragment);
+      if (ocimatcher.matches()) {
+         // host was 'namespace.compact.objectstorage.[region].oraclecloud.com'.
+         return ocimatcher.group(1);
+      }
       matcher = STANDARD_CLOUDSEARCH_ENDPOINT_PATTERN.matcher(fragment);
       if (matcher.matches()) {
          // host was 'domain.[region].cloudsearch.amazonaws.com'.
